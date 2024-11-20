@@ -1,3 +1,12 @@
+/**********************************
+* CPE 2600 121 Lab 11: Multiprocessing
+* Filename: jpegrw.h
+* Description: header file for jpegrw.c
+*
+* Author: Holden Truman
+* Date 11/19/2024
+***********************************/
+
 #ifndef JPEGRW_H
 #define JPEGRW_H
 

@@ -1,11 +1,11 @@
-/// 
-//  mandel.c
-//  Based on example code found here:
-//  https://users.cs.fiu.edu/~cpoellab/teaching/cop4610_fall22/project3.html
-//
-//  Converted to use jpg instead of BMP and other minor changes
-//  
-///
+/**********************************
+* CPE 2600 121 Lab 11: Multiprocessing
+* Filename: movie.c
+* Description: Program creates 50 images for a Mandelbot movie with a specified number of processes from the user
+*
+* Author: Holden Truman
+* Date 11/19/2024
+***********************************/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -37,7 +37,7 @@ int main( int argc, char *argv[] )
 	int    image_height = 1000;
 	int    max = 1000;
 
-    int num_children = 20;
+    int num_children = 5;
 
 	// For each command line argument given,
 	// override the appropriate configuration value.
@@ -61,12 +61,12 @@ int main( int argc, char *argv[] )
             // Fork failed
             perror("Fork failed");
             exit(1);
-        } else if (pid == 0) { // child process will not fork, so only 20 children
+        } else if (pid == 0) { // child process will not fork, so proper # of children made
             // Child process
         
-            //naming sequential images
             int image_num = i;
             while ((num_children < 50) && (image_num < 50)) { // processes will make multipe images if necessary
+                //naming sequential images
                 char outputFile[50];
                 char imagenumber[3];  // Ensure the buffer is large enough to hold the string
                 strcpy(outputFile, outputprefix);
@@ -74,11 +74,12 @@ int main( int argc, char *argv[] )
                 strcat(outputFile, imagenumber);
                 strcat(outputFile, ".jpg");
                 
-                // Calculate y scale based on x scale (settable) and image sizes in X and Y (settable)
-                xcenter = xcenter - (image_num * .007);
-                ycenter = ycenter + (image_num * .007);
-                xscale = 4 * (50.0/(image_num*8+50.0));
+                xcenter = xcenter - (image_num * .007); //go to the left in later images
+                ycenter = ycenter + (image_num * .007); //go up in later images
+                xscale = 4 * (50.0/(image_num*8+50.0)); //zoom in more for later images
                 max = 1000;
+
+                /// Calculate y scale based on x scale (settable) and image sizes in X and Y (settable)
                 yscale = xscale / image_width * image_height;
 
                 // Create a raw image of the appropriate size.
@@ -188,18 +189,11 @@ int iteration_to_color( int iters, int max )
 // Show help message
 void show_help()
 {
-	printf("Use: mandel [options]\n");
+	printf("Use: movie [options]\n");
 	printf("Where options are:\n");
-	printf("-m <max>    The maximum number of iterations per point. (default=1000)\n");
-	printf("-x <coord>  X coordinate of image center point. (default=0)\n");
-	printf("-y <coord>  Y coordinate of image center point. (default=0)\n");
-	printf("-s <scale>  Scale of the image in Mandlebrot coordinates (X-axis). (default=4)\n");
-	printf("-W <pixels> Width of the image in pixels. (default=1000)\n");
-	printf("-H <pixels> Height of the image in pixels. (default=1000)\n");
-	printf("-o <file>   Set output file. (default=mandel.bmp)\n");
+	printf("-c <# of processes>    The number of processes that create the images (default=5)\n");
 	printf("-h          Show this help text.\n");
 	printf("\nSome examples are:\n");
-	printf("mandel -x -0.5 -y -0.5 -s 0.2\n");
-	printf("mandel -x -.38 -y -.665 -s .05 -m 100\n");
-	printf("mandel -x 0.286932 -y 0.014287 -s .0005 -m 1000\n\n");
+	printf("movie.exe -h\n");
+	printf("movie.exe -c 10\n");
 }

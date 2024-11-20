@@ -1,3 +1,12 @@
+/**********************************
+* CPE 2600 121 Lab 11: Multiprocessing
+* Filename: mandel.c
+* Description: Creates Mandelbot images with arguments specified by user
+*
+* Author: Holden Truman
+* Date 11/19/2024
+***********************************/
+
 /// 
 //  mandel.c
 //  Based on example code found here:
@@ -36,7 +45,6 @@ int main( int argc, char *argv[] )
 
 	// For each command line argument given,
 	// override the appropriate configuration value.
-
 	while((c = getopt(argc,argv,"x:y:s:W:H:m:o:h"))!=-1) {
 		switch(c) 
 		{
@@ -67,12 +75,11 @@ int main( int argc, char *argv[] )
 				break;
 		}
 	}
-
 	// Calculate y scale based on x scale (settable) and image sizes in X and Y (settable)
 	yscale = xscale / image_width * image_height;
 
 	// Display the configuration of the image.
-	printf("mandel: x=%lf y=%lf xscale=%lf yscale=%1f max=%d outfile=%s\n",xcenter,ycenter,xscale,yscale,max,outfile);
+	//printf("mandel: x=%lf y=%lf xscale=%lf yscale=%1f max=%d outfile=%s\n",xcenter,ycenter,xscale,yscale,max,outfile);
 
 	// Create a raw image of the appropriate size.
 	imgRawImage* img = initRawImage(image_width,image_height);

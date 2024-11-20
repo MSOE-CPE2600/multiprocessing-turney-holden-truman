@@ -1,3 +1,12 @@
+/**********************************
+* CPE 2600 121 Lab 11: Multiprocessing
+* Filename: jpegrw.c
+* Description: Reads and writes to jpeg images
+*
+* Author: Holden Truman
+* Date 11/19/2024
+***********************************/
+
 /// 
 //  jpegrw.c
 //  Based on example code found here:
