@@ -2,9 +2,10 @@
 * CPE 2600 121 Lab 11: Multiprocessing
 * Filename: movie.c
 * Description: Program creates 50 images for a Mandelbot movie with a specified number of processes from the user
+* as well as a specified number of threads
 *
 * Author: Holden Truman
-* Date 11/19/2024
+* Date 11/29/2024
 ***********************************/
 #include <stdlib.h>
 #include <stdio.h>
@@ -186,7 +187,7 @@ void compute_image(imgRawImage* img, double xmin, double xmax, double ymin, doub
 	pthread_t threads[num_threads]; 
 	thread_args_t args[num_threads];
 	int result;
-	
+
 	//have to make the args before you start making threads or else issues occur
 	for(int i = 0; i < num_threads; i++) {
 		args[i].img = img;
@@ -195,10 +196,11 @@ void compute_image(imgRawImage* img, double xmin, double xmax, double ymin, doub
         args[i].ymin = ymin;
         args[i].ymax = ymax;
         args[i].max = max;
-        args[i].start_height = (img->height * i) / num_threads;
-        args[i].end_height = (img->height * (i + 1)) / num_threads;
+        args[i].start_height = (img->height * i) / num_threads; //each thread calculates a chunk of the image
+        args[i].end_height = (img->height * (i + 1)) / num_threads; //the next threads chunk is on top of the previous'
 	}
 
+	//create each thread that calcultates 1 / num_threads of the image
 	for (int i = 0; i < num_threads; i++) {
 		result = pthread_create(&threads[i], NULL, compute_part_image, (void*) &args[i]);
         if (result != 0) {
@@ -215,31 +217,6 @@ void compute_image(imgRawImage* img, double xmin, double xmax, double ymin, doub
             exit(1);
         }
     }
-
-	/*
-	int i,j;
-
-	int width = img->width;
-	int height = img->height;
-
-	// For every pixel in the image...
-
-	for(j=0;j<height;j++) {
-
-		for(i=0;i<width;i++) {
-
-			// Determine the point in x,y space for that pixel.
-			double x = xmin + i*(xmax-xmin)/width;
-			double y = ymin + j*(ymax-ymin)/height;
-
-			// Compute the iterations at that point.
-			int iters = iterations_at_point(x,y,max);
-
-			// Set the pixel in the bitmap.
-			setPixelCOLOR(img,i,j,iteration_to_color(iters,max));
-		}
-	}
-	*/
 }
 
 
