@@ -13,12 +13,14 @@
 #include "jpegrw.h"
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include "thread_args.h"
+#include <pthread.h>
 
 // local routines
 static int iteration_to_color( int i, int max );
 static int iterations_at_point( double x, double y, int max );
 static void compute_image( imgRawImage *img, double xmin, double xmax,
-									double ymin, double ymax, int max );
+									double ymin, double ymax, int max, int num_threads );
 static void show_help();
 
 
@@ -38,14 +40,18 @@ int main( int argc, char *argv[] )
 	int    max = 1000;
 
     int num_children = 5;
+	int num_threads = 1;
 
 	// For each command line argument given,
 	// override the appropriate configuration value.
-	while((c = getopt(argc,argv,"c:h"))!=-1) {
+	while((c = getopt(argc,argv,"c:t:h"))!=-1) {
 		switch(c) 
 		{
 			case 'c':
 				num_children = atof(optarg);
+				break;
+			case 't':
+				num_threads = atof(optarg);
 				break;
             case 'h':
 				show_help();
@@ -53,7 +59,7 @@ int main( int argc, char *argv[] )
 				break;
 		}
 	}
-    printf("Processing 50 images with %d children\n", num_children);
+    printf("Processing 50 images with %d children and %d threads\n", num_children, num_threads);
 
 	for (int i = 0; i < num_children; i++) {
         pid_t pid = fork();
@@ -89,7 +95,7 @@ int main( int argc, char *argv[] )
                 setImageCOLOR(img,0);
 
                 // Compute the Mandelbrot image
-                compute_image(img,xcenter-xscale/2,xcenter+xscale/2,ycenter-yscale/2,ycenter+yscale/2,max);
+                compute_image(img,xcenter-xscale/2,xcenter+xscale/2,ycenter-yscale/2,ycenter+yscale/2,max, num_threads);
 
                 // Save the image in the stated file.
                 storeJpegImageFile(img,outputFile);
@@ -142,13 +148,75 @@ int iterations_at_point( double x, double y, int max )
 	return iter;
 }
 
+//compute part of an image (used for multi-threading)
+void* compute_part_image(void* arg) {
+    thread_args_t* args = (thread_args_t*)arg;
+    
+	int i,j;
+
+	int width = args->img->width;
+	int height = args->img->height;
+
+	// For every pixel in the image...
+	for(j=args->start_height;j<args->end_height;j++) {
+
+		for(i=0;i<width;i++) {
+
+			// Determine the point in x,y space for that pixel.
+			double x = args->xmin + i*(args->xmax-args->xmin)/width;
+			double y = args->ymin + j*(args->ymax-args->ymin)/height;
+
+			// Compute the iterations at that point.
+			int iters = iterations_at_point(x,y,args->max);
+
+			// Set the pixel in the bitmap.
+			setPixelCOLOR(args->img,i,j,iteration_to_color(iters,args->max));
+		}
+	}
+	return NULL;
+}
+
 /*
 Compute an entire Mandelbrot image, writing each point to the given bitmap.
 Scale the image to the range (xmin-xmax,ymin-ymax), limiting iterations to "max"
 */
 
-void compute_image(imgRawImage* img, double xmin, double xmax, double ymin, double ymax, int max )
+void compute_image(imgRawImage* img, double xmin, double xmax, double ymin, double ymax, int max, int num_threads )
 {
+	pthread_t threads[num_threads]; 
+	thread_args_t args[num_threads];
+	int result;
+	
+	//have to make the args before you start making threads or else issues occur
+	for(int i = 0; i < num_threads; i++) {
+		args[i].img = img;
+        args[i].xmin = xmin;
+        args[i].xmax = xmax;
+        args[i].ymin = ymin;
+        args[i].ymax = ymax;
+        args[i].max = max;
+        args[i].start_height = (img->height * i) / num_threads;
+        args[i].end_height = (img->height * (i + 1)) / num_threads;
+	}
+
+	for (int i = 0; i < num_threads; i++) {
+		result = pthread_create(&threads[i], NULL, compute_part_image, (void*) &args[i]);
+        if (result != 0) {
+            fprintf(stderr, "Error creating thread %d\n", i);
+            exit(1);
+        }
+	}
+
+	// Wait for each thread to finish
+    for (int i = 0; i < num_threads; i++) {
+        result = pthread_join(threads[i], NULL);
+        if (result != 0) {
+            fprintf(stderr, "Error joining thread %d\n", i);
+            exit(1);
+        }
+    }
+
+	/*
 	int i,j;
 
 	int width = img->width;
@@ -171,6 +239,7 @@ void compute_image(imgRawImage* img, double xmin, double xmax, double ymin, doub
 			setPixelCOLOR(img,i,j,iteration_to_color(iters,max));
 		}
 	}
+	*/
 }
 
 
@@ -192,6 +261,7 @@ void show_help()
 	printf("Use: movie [options]\n");
 	printf("Where options are:\n");
 	printf("-c <# of processes>    The number of processes that create the images (default=5)\n");
+	printf("-t <# of threads>    The number of threads that process the images, can be used with multiple processes (default=1)\n");
 	printf("-h          Show this help text.\n");
 	printf("\nSome examples are:\n");
 	printf("movie.exe -h\n");
